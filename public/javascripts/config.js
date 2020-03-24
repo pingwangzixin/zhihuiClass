@@ -1,0 +1,35 @@
+// var localIP="http://localhost:8081";
+// var jeucIp ="http://edu.jetsen.cn:9001/jeuc/api"; //用户中心接口 获取用户数据
+// var showResourceIp ="http://edu.jetsen.cn:9020/edu-resource/a/resource/mrs_rmi/getById?token=29B5DF07F7FC514807CE5FBC12EA1506&id="; //显示资源详情接口
+//  var resourceIp ="http://edu.jetsen.cn:9004/Teacher"; //教师端获取资源列表接口
+// 
+// var kezhongIp=localIP+"/sunvote"; //答题器,获取学生是否答题接口
+// var videoPlay = "http://edu.jetsen.cn:9020/resource/Preview/" //视频播放固定地址
+// var recordIp =localIP+"/photoBack/getsendPhotos?"; //教师下发接口
+// var studentIp =localIP+"/stusend/"; //学生作答，签到页面获取数字的接口
+// var recordimgIp =localIP+"/photoBack/getbackPhotos?"; //学生回传图片接口
+// 
+// 
+// var kezhongIp=localIP+"/sunvote"; //答题器,获取学生是否答题接口
+// var videoPlay = "http://edu.jetsen.cn:9020/resource/Preview/" //视频播放固定地址
+// var recordIp =localIP+"/photoBack/getsendPhotos?"; //教师下发接口
+// var studentIp =localIP+"/stusend/"; //学生作答，签到页面获取数字的接口
+// var recordimgIp =localIP+"/photoBack/getbackPhotos?"; //学生回传图片接口
+  var localIP="http://192.168.9.60:8081";
+  var jeucIp="http://218.9.54.64:9099/jeuc/api"; //用户中心接口 获取用户数据
+  var resourceIp="http://218.9.54.64:9099/Teacher"; //教师端获取资源列表接口
+  var recordIp= localIP+"/photoBack/getsendPhotos?";
+  var showResourceIp= 'http://218.9.54.49:8888/edu-resource/a/resource/mrs_rmi/getById?token=29B5DF07F7FC514807CE5FBC12EA1506&id='; // 显示资源详情接口
+  var videoPlay= 'http://218.9.54.49:8888/resource/Preview/'; // 视频播放固定地址
+
+// 
+// var localIP="http://localhost:8081";
+// var jeucIp ="http://111.207.13.88:8881/jeuc/api"; //用户中心接口 获取用户数据
+// var showResourceIp ="http://111.207.13.88:9061/edu-resource/a/resource/mrs_rmi/getById?token=29B5DF07F7FC514807CE5FBC12EA1506&id="; //显示资源详情接口
+// // var resourceIp ="http://111.207.13.88:9004/Teacher"; //教师端获取资源列表接口
+// var resourceIp ="http://111.207.13.88:8882/Teacher"; //教师端获取资源列表接口
+// var kezhongIp=localIP+"/sunvote"; //答题器,获取学生是否答题接口
+// var videoPlay = "http://111.207.13.88:9061/resource/Preview/" //视频播放固定地址
+// var recordIp =localIP+"/photoBack/getsendPhotos?"; //教师下发接口
+// var studentIp =localIP+"/stusend/"; //学生作答，签到页面获取数字的接口
+// var recordimgIp =localIP+"/photoBack/getbackPhotos?"; //学生回传图片接口

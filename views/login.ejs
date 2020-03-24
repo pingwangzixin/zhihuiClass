@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh" ng-app="login">
+
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<link rel="stylesheet" href="/stylesheets/reset.css">
+		<link rel="stylesheet" href="/stylesheets/main.css" />
+		<link rel="stylesheet" href="/stylesheets/iconfont/iconfont.css" />
+		<script src="javascripts/rem.js"></script>
+		<script src="javascripts/jquery-1.8.2.min.js"></script>
+		<script src="javascripts/angular-1.3.2.min.js"></script>
+		<script src="javascripts/md5.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+		<title>捷成互动课--堂智慧教学系统</title>
+	</head>
+	
+	<body ng-controller="loginCtrl" id="body" ondragstart="window.event.returnValue=false" oncontextmenu="window.event.returnValue=false" onselectstart="event.returnValue=false">
+		<div class="logo">
+			<img src="images/backgrounds/logo_login.png" />
+		</div>
+		<!--登录提示框-->
+		<div class="login_tips">
+			<div class="page-container">
+				<h1 style="display: inline-block;">捷成课堂  有你有我</h1>
+				<span id="login_ewm">
+					<img class="changeimg" style="width:100%" src="images/pc.png" alt="" />
+				</span>
+				<div class="form" style="display: none;">
+					<input type="text" name="username" class="username" placeholder="用户名" ng-model="username">
+					<input type="password" name="password" class="password" placeholder="密码" ng-model="password">
+					<button type="submit" class="login_btn" ng-click="login(username,password)">登录</button>
+					<div class="error">
+						<span>+</span>
+					</div>
+				</div>
+				<div class="ewm_show" style="display: block;">
+					
+					<img ng-src="{{erwima}}" />
+					<p class="wx_duanluo">打开课中APP扫码登录</p>
+					<div style="display: none;" class="msg-err">
+						<h6 style="color:#000">二维码已失效</h6>
+						<a href="javascript:;" class="refresh">请点击刷新</a>
+					</div>
+				</div>
+				<div class="connect">
+					<p></p>
+				</div>
+			</div>
+			<p class="welcome_user" style="display: none;"></p>
+		</div>
+	</body>
+
+	<script src="javascripts/config.js"></script>
+	<script src="javascripts/supersized.3.2.7.min.js"></script>
+	<script src="javascripts/supersized-init.js"></script>
+
+</html>
+
+<script type="text/javascript">
+	var app = angular.module("login", []);
+	app.controller("loginCtrl", function($scope, $http,$timeout) {
+		//获取二维码
+		$http.get(localIP + '/QRCode/getQrCode').success(function(res) {
+			if(res.ret == 200) {
+				$scope.erwima =res.data.qrCodeImg;
+				$scope.uuid = res.data.uuid;
+			} else {
+				console.log(res.message)
+			}
+		})
+
+		//轮询扫描结果
+		var timer = setInterval(function() {
+			$http.get(localIP + '/QRCode/longConnectionCheck?uuid=' + $scope.uuid).success(function(res) {
+				if(res.ret == 200) {
+					var onepass=hex_md5(res.data.password)
+					var twopass=hex_md5(onepass)
+					loginEvents(res.data.loginName,twopass);
+				}
+			})
+		}, 2000);
+
+		//用户登录--------------------------------------------------
+		$scope.login = function(username, password) {
+			var onepass=hex_md5(password)
+			var twopass=hex_md5(onepass)
+			loginEvents(username, twopass);
+		};
+		
+		//监听键盘事件enter键登录
+		$(document).keydown(function(event){
+	　　　　if(event.keyCode == 13){
+			   var onepass=hex_md5($scope.password)
+			   var twopass=hex_md5(onepass)
+	　　　　　　loginEvents($scope.username,twopass);
+	　　　　}
+	　　});
+		
+		//登录事件
+		function loginEvents(username, password) {
+			if(username == '') {
+				$(".page-container").find('.error').fadeOut('fast', function() {
+					$(".page-container").css('top', '27px');
+				});
+				$(".page-container").find('.error').fadeIn('fast', function() {
+					$(".page-container").parent().find('.username').focus();
+				});
+				return false;
+			} else if(password == '') {
+				$(".page-container").find('.error').fadeOut('fast', function() {
+					$(".page-container").css('top', '96px');
+				});
+				$(".page-container").find('.error').fadeIn('fast', function() {
+					$(".page-container").parent().find('.password').focus();
+				});
+				return false;
+			} else {
+				$(".page-container").fadeOut('fast', function() {
+					$(this).css('top', '0');
+				});
+				$http.get(jeucIp + '/uc/login?username=' + username + '&password=' + password).success(function(jdata) {
+					if(jdata.ret == 200) {
+						if(jdata.data.userType == '1' && jdata.data.userCourse != "") {
+							sessionStorage.setItem("userId", jdata.data.id)
+							sessionStorage.setItem("userName", jdata.data.realname)
+							sessionStorage.setItem("userMobile", jdata.data.userMobile)
+							sessionStorage.setItem("userEmail", jdata.data.userEmail)
+							sessionStorage.setItem("userMobile", jdata.data.userMobile)
+							if(jdata.data.userFace == "") {
+								var teachFace = 'images/login_img.png';
+								sessionStorage.setItem("teachFace", teachFace)
+							} else {
+								var teachFace = 'http://111.207.13.88:8881/resource/user/face/' + jdata.data.userFace;
+								sessionStorage.setItem("teachFace", teachFace)
+							}
+							
+							window.location.href = '/app'  //跳转页面到app
+							
+						} else {
+							$(".welcome_user").fadeIn('fast', function() {
+								$(this).css('top', '220px');
+								setTimeout(function() {
+									$(".welcome_user").fadeOut('fast', function() {
+										$(this).css('top', '0');
+									});
+									$(".page-container").fadeIn("fast");
+									$(".welcome_user").html("");
+								}, 2000)
+							});
+						}
+					} else {
+						$(".welcome_user").fadeIn('fast', function() {
+							$(this).css('top', '220px');
+							$(this).html(jdata.message);
+							setTimeout(function() {
+								$(".welcome_user").fadeOut('fast', function() {
+									$(this).css('top', '0');
+								});
+								$(".page-container").fadeIn("fast");
+								$(".welcome_user").html("")
+							}, 2000)
+						});
+					}
+				}).error(function(e) {
+					$(".welcome_user").fadeIn('fast', function() {
+						$(this).css('top', '100px');
+						$(this).html("网络连接异常，请重试!");
+						setTimeout(function() {
+							$(".welcome_user").fadeOut('fast', function() {
+								$(this).css('top', '0');
+							});
+							$(".page-container").fadeIn("fast");
+							$(".welcome_user").html("")
+						}, 2000)
+					});
+				})
+			}
+		};
+	})
+</script>
+<script type="text/javascript">
+	//点击二维码登录
+	$("#login_ewm").toggle(function() {
+		$(".form").show();
+		$(".ewm_show").hide();
+		$(".changeimg").attr("src",'images/ewm.png');
+	}, function() {
+		$(".form").hide();
+		$(".ewm_show").show();
+		$(".changeimg").attr("src",'images/pc.png');
+	})
+</script>

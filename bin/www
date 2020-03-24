@@ -1,0 +1,141 @@
+#!/usr/bin/env node
+
+var app = require('../app');
+
+
+var debug = require('debug')('jeic:server');
+var http = require('http');
+var open = require("open");
+
+/**
+ * 获取本机的ip地址
+ */
+var os =  require('os');
+var mkdirp = require('mkdirp');
+/**
+ * 创建目录
+ */
+mkdirp('C:/luping/', function (err) {
+    if (err) console.error(err)
+    else console.log('pow!')
+});
+var ip;
+var stringIp=JSON.stringify(os.networkInterfaces());
+var subIPindex=stringIp.indexOf(":")-1;
+var netName=stringIp.substring(2,subIPindex)
+
+for(var i=0;i<os.networkInterfaces()[netName].length;i++){
+    if(os.networkInterfaces()[netName][i].family=='IPv4'){
+        ip=os.networkInterfaces()[netName][i].address;
+    }
+};
+
+console.log(ip)
+/**
+ * 设置端口号
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+var streams = require('./app/streams.js')();
+// routing
+require('./app/routes.js')(app, streams);
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+    var err = new Error('Not Found');
+    err.status = 404;
+    next(err);
+});
+
+// error handler
+app.use(function(err, req, res, next) {
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+    // render the error page
+    res.status(err.status || 500);
+    res.render('error');
+});
+
+
+var server = http.createServer(app);
+
+/**
+ * 创建socket.io连接
+ */
+
+var io = require('socket.io')(server);
+var chat = require("../modules/classRoomSocket.js");
+chat.Start(io);
+
+
+/**
+ * Socket.io event handling
+ */
+require('./app/socketHandler.js')(io, streams);
+
+/**
+ * 监听服务器端口号和ip,在浏览器里连接
+ */
+server.listen(port,ip,function(err){
+    if(err){
+        console.error(err);
+    }else {
+        console.info("服务器启动成功..");
+    }
+});
+
+/**
+ * 调用谷歌浏览器直接打开项目
+ */
+//open("http://"+ip+":"+port, "chrome");
+
+server.on('error', onError);
+server.on('listening', onListening);
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    return val;
+  }
+
+  if (port >= 0) {
+    return port;
+  }
+
+  return false;
+}
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}

@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js" ng-app="app">
+
+<head>
+    <meta charset="utf-8">
+    <title>捷成互动课堂--智慧教学系统</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="full-screen" content="yes">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="stylesheet" href="stylesheets/reset.css">
+	<link rel="stylesheet" href="stylesheets/duibi.css" />
+    <link rel="stylesheet" href="stylesheets/main.css" />
+    <link rel="stylesheet" href="stylesheets/iconfont/iconfont.css" />
+    <link rel="stylesheet" href="stylesheets/animate.min.css" />
+    <link rel="stylesheet" href="javascripts/mCustomScrollbar/jquery.mCustomScrollbar.css" />
+	
+	<link rel="stylesheet" href="stylesheets/clock.css">
+	<script src="javascripts/rem.js"></script>
+    <script src="javascripts/jquery-1.8.2.min.js"></script>
+    <script src="javascripts/angular-1.3.2.min.js"></script>
+    <script src="javascripts/angular-sanitize.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+	<script type="text/javascript" src="javascripts/rtcClient.js"></script>
+    <style type="text/css">
+
+		.caozuo {
+		    position: fixed;
+		}
+		
+		.page_btn{
+			position: fixed;
+			background: #f00;
+			width:100px;
+			height:100px;
+			top: 50%;
+			outline: none;
+			text-align: center;
+			padding: 0;
+			border-radius: 50%;
+			color: #fff;
+			opacity: .3;
+			background:#2d2c2c;
+		}
+		.page_btn>em{
+			font-size:60px;
+		}
+		.lastPage{
+			left: 0;
+		}
+		
+		.nextPage{
+			right: 0;
+		}
+		
+		#remoteVideosContainer video{
+			width:100%;
+			height:100%;
+		}
+    </style>
+</head>
+
+<body ng-controller="teachRoom" id="body" ondragstart="window.event.returnValue=false" oncontextmenu="window.event.returnValue=false" onselectstart="event.returnValue=false">
+
+    <!-- 加载进度条 -->
+	<div class="tipsNullcontainer" style="display:none">
+		<div class="loadEffect">
+		    <span></span>
+		    <span></span>
+		    <span></span>
+		    <span></span>
+		    <span></span>
+		    <span></span>
+		    <span></span>
+		    <span></span>
+		</div>
+		<p class="tipData"></p>
+	</div>
+
+   <div class="round" id="fd">
+   	<div class="toggle" id="toggle" onClick="expand()">
+   		<i class="iconfont icon-hao" id="plus"></i>
+   	</div>
+   	<div class="parent">
+   	<div class="menu" id="menu">
+   		<div class="circle_bg">
+   			<div class="part bg-blue pos01" ng-click="search()">
+   				<p class="cont">
+   					<i class="iconfont icon-xingtaiduICON_sousuo--"></i>
+   					<span>搜索</span>
+   				</p>
+   			</div>
+   			<div class="part bg-red pos02" ng-click="callName()">
+   				<p class="cont">
+   					<i class="iconfont icon-dianming"></i>
+   					<span>点名</span>
+   				</p>
+   			</div>
+   			<div class="part bg-green pos03" ng-click="moretoolsClick()">
+   				<p class="cont">
+   					<i class="iconfont icon-bangdingyinxingqia"></i>
+   					<span>更多</span>
+   				</p>
+   			</div>
+   			<div class="part bg-blue1 pos04">
+   				<p class="cont">
+   					<i class="iconfont icon-chexiao"></i>
+   					<span>撤销</span>
+   				</p>
+   			</div>
+   			<div class="part bg-red2 pos05">
+   				<p class="cont">
+   					<i class="iconfont icon-pizhu"></i>
+   					<span>批注</span>
+   				</p>
+   			</div>
+   			<div class="part bg-green3 pos06" ng-click="countDown()">
+   				<p class="cont">
+   					<i class="iconfont icon-icon-test"></i>
+   					<span>倒计时</span>
+   				</p>
+   			</div>
+   		</div>
+   	</div>
+   	<!--批注内容 start-->
+   	<div id="annotation" style="display: none;">
+   		<ul class="color">
+   			<li class="actives"><span></span></li>
+   			<li><span></span></li>
+   			<li><span></span></li>
+   			<li><span></span></li>
+   			<li><span></span></li>
+   			<li><span></span></li>
+   		</ul>
+   		<ul class="spot">
+   			<li  class="actives"><span></span></li>
+   			<li><span></span></li>
+   			<li><span></span></li>
+   		</ul>
+   	</div>
+   	<!--批注内容 end-->
+	<!--批注内容 start-->
+	<div id="moreTools" style="display: none;">
+		<ul class="moreclass">
+			<li ng-click="qiangdaBtn()">
+				<img src="images/qiangdabtn.png" alt="">
+				<p>抢答</p>
+			</li>
+		</ul>
+	</div>
+	
+   	</div>
+   </div>
+   
+   <!--批注弹框-->
+   <div class="annotationFrame">
+   	<canvas id="canvas"></canvas>
+   </div>
+
+    <!-- 点名器 -->
+    <div class='luck-back' style="display:none">
+        <div class="luck-content ce-pack-end">
+            <div id="luckuser" class="slotMachine">
+                <div class="slot">
+                    <span class="name">姓名</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--登录提示框-->
+    <p class="welcome_user" style="display:none;z-index:1200"></p>
+
+    <!--底部固定导航-->
+    <div class="dockposition animated bounceInDown">
+        <div class="content">
+            <div class="back"></div>
+            <div class="icons">
+                <div class="icon" id="userWindow" ng-click="userWindow()"> 
+					<i class="iconfont icon-yonghu"></i>
+                    <div class="title">用户</div>
+                </div>
+                <div class="icon" id="memberAdmin" ng-click="memberAdmin()"> <i class="iconfont icon-yonghu1"></i>
+                    <div class="title">成员</div>
+                </div>
+                <div class="icon" id="classRecord" ng-click="classRecorda()"> <i class="iconfont icon-jilu1"></i>
+                    <div class="title">教学记录</div>
+                </div>
+                <div class="icon" id="classBegins" ng-click="classBegins()"> <i class="iconfont icon-lingdang1"></i>
+                    <div class="title">上课</div>
+                </div>
+                <div class="icon" id="resouceAdmin" ng-click="resouceAdmin()"> <i class="iconfont icon-yun1"></i>
+                    <div class="title">资源</div>
+                </div>
+                <div class="icon" id="drawclick" ng-click="drawclick()"> <i class="iconfont icon-heibanblackboard4"></i>
+                    <div class="title">白板</div>
+                </div>
+                <div class="icon" id="yunpingtai" ng-click="yunpingtai()"> <i class="iconfont icon-xuanti-pingtai"></i>
+                    <div class="title">平台</div>
+                </div>
+                <div class="icon" id="exitid" ng-click="exitid()"> <i class="iconfont icon-qunfenganquantuichu"></i>
+                    <div class="title">退出</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!--弹窗-->
+    <div class="content appcontwindow">
+        <!--上课弹窗-->
+        <div class="showTc classTc" style="display: none;">
+            <div class="tchide"></div>
+            <div class="tcContent">
+                <div class="box_title"> <span class="close_box fr" ng-click="closeWindow($event)"><img src="images/close.svg" alt="" /></span> <span class="title_box_tc">教学</span> </div>
+                <div class="banjinianji clearfix">
+                    <div> 班级:
+                        <select id="banjiid" ng-model="grade.classId" ng-change="selectClass(grade.classId)" ng-options="grade.classId as grade.gradeName+grade.className+'班' for grade in gradeClass">
+                            <option value="">请选择班级</option>
+                        </select>
+                    </div>
+                    <div> 科目:
+                        <select id="xuekeid" ng-model="sbjid">
+                            <option value="">请选择科目</option>
+                        </select>
+                    </div>
+                    <div style="margin-top: 20px;"> 录屏:
+						<div style="width:27rem;display:inline-block;text-align: justify;">
+							<input name="luping" id="screenyes" type="radio"><label for="screenyes">是</label>
+							<input name="luping" id="screenno" type="radio" checked><label for="screenno">否</label>
+						</div>
+                        
+                    </div>
+                </div>
+                <button class="sure_btn" ng-click="sure_beginClass(grade.classId,sbjid)">确认</button>
+            </div>
+        </div>
+        <!--下课确认框-->
+        <div class="showTc xiakeTc" style="display: none;">
+            <div class="tchide"></div>
+            <div class="tcContent">
+                <div class="box_title"> <span class="close_box fr" ng-click="closeWindow($event)"><img src="images/close.svg" alt="" /></span> <span class="title_box_tc">提示</span> </div>
+                <div class="text_shadow tips_div">
+                    <p class="xiaketips" style="display: none;">确认下课？</p>
+                </div> <span class="btn surecolor xiake_sure" ng-click="xiake_sure()">确认</span> <span class="btn cancelcolor color_hui logoutcancel" ng-click="closeWindow($event)">取消</span> </div>
+        </div>
+        <!--退出确认框-->
+        <div class="showTc signOutTc userLogOut" style="display: none;">
+            <div class="tchide"></div>
+            <div class="tcContent">
+                <div class="box_title"> <span class="close_box fr" ng-click="closeWindow($event)"><img src="images/close.svg" alt="" /></span> <span class="title_box_tc">提示</span> </div>
+                <div class="text_shadow tips_div">
+                    <p>确认退出？</p>
+                </div> 
+				<span class="btn surecolor logout_sure" ng-click="logout_sure()">确认</span> 
+				<span class="btn cancelcolor color_hui logoutcancel" ng-click="closeWindow($event)">取消</span> 
+			</div>
+        </div>
+        <!--用户信息弹窗-->
+        <div class="showTc ctrlTc userInfoTc" style="display: none;">
+            <div class="tchide"></div>
+            <div class="tcContent animated  fadeInLeft">
+                <div class="box_title"> <span class="close_box fr" ng-click="closeWindow($event)"><img src="images/close.svg" alt="" /></span> <span class="title_box_tc">个人信息</span> </div>
+                <div class="wx_contentBox userinfoCont">
+                    <!--用户信息-->
+                    <ul class="fl userinfoul">
+                        <li>用户名:<span ng-bind="userName"></span></li>
+                        <li>手机号:<span ng-bind="userMobile"></span></li>
+                        <li>邮箱号:<span ng-bind="userEmail"></span></li>
+                    </ul> <span class="fl teachFace"><img ng-src="{{teachFace}}" style="width:100%;" /></span> </div>
+            </div>
+        </div>
+        <!--成员管理弹窗-->
+        <div class="showTc ctrlTc menberAdminTc" style="display: none;">
+            <div class="tchide"></div>
+            <div class="tcContent  animated jackInTheBox">
+                <div class="box_title"> <span class="close_box fr" ng-click="closeCyglWindow($event)"><img src="images/close.svg" alt="" /></span> <span class="title_box_tc">成员管理</span> </div>
+                <div class="wx_contentBox clearfix">
+                    <div class="menberight fl">
+                        <!---成员列表-->
+                        <div class="menber_list_show">
+                            <div class="menber_tips"> <span>全部:<i ng-bind="allcount"></i>人</span> <span>已签到:<i ng-bind="comecount"></i>人</span> <span>未签到:<i ng-bind="allcount-comecount"></i>人</span>
+                            </div>
+                            <div class="memberAdminCon" style="display: block;">
+                                <div ng-if="remember.length==0" class="tipsall"> <img style="width:330px" src="images/404.png" />
+                                    <p class="tipscolor">没有查询到学生</p>
+                                </div>
+
+                                <div ng-repeat="i in remember track by i.stuNo" ng-click="studentFile($event,i.id)" class="chengyuanlist icon opacity" >
+                                    <em ng-show="devce.indexOf(i.deviceName)!=-1 || devce.indexOf(i.id)!=-1 " ng-class="{'removeclas':devce.indexOf(i.deviceName)!=-1 || devce.indexOf(i.id)!=-1 }"></em>
+                                    <i>
+										<img ng-if="i.sex=='男'" src="images/boy.png"/>
+										<img ng-if="i.sex=='女'" src="images/girl.png" />
+									</i>
+                                    <span ng-if="stuUpLoadFileId.indexOf(i.id)!=-1" class="num" ng-bind="stuUpLoadFile[stuUpLoadFileId.indexOf(i.id)].stuCount"></span>
+									
+                                    <div class="title" ng-bind="i.realname"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        	<div class="tc imgListtc" style="display: none;">
+				<span class="closefullscreen fr" ng-click="closestuimguploadtc($event)">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+				</span>
+        		<div class="content">
+	        		<div class="wx_contentBox  clearfix">
+	                    <div class="resouceright resoucerights">
+	                        <div>
+	                            <div class="ziyuandiv">
+	                                <ul class="ziyuanul">
+	                                    <li style="width:20rem;display: inline-block;margin: 2rem;" ng-repeat="i in studentFileList track by $index" ng-click="showstuimgResoce(i.resourceUrl,'0')"> 
+	                                        <img ng-src="{{i.resourceUrl}}" style="width:20rem">
+											<p class="filetext_title" ng-bind="i.resourceName"></p>
+	                                    </li>
+	                                </ul>
+	                            </div>
+	                        </div>
+	                    </div>
+	                </div>
+        		</div>
+        	</div>
+        </div>
+        <!--资源弹窗-->
+        <div class="showTc ctrlTc resouceInfoTc" style="display: none;">
+            <div class="tcContent  animated rollIn">
+                <div class="box_title"> <span class="close_box fr" ng-click="closeWindow($event)"><img src="images/close.svg"/></span> <span class="title_box_tc">资源</span> </div>
+                <div class="wx_contentBox  clearfix">
+                    <div class="resouceleft fl">
+                        <ul>
+                            <li ng-class="{'wx_active':rs==0}" ng-click="restab(0)"><i class="iconfont icon-yun1"></i>云资源</li>
+                            <li ng-class="{'wx_active':rs==1}" ng-click="restab(1)"><i class="iconfont icon-yun1"></i>云试题</li>
+                        </ul>
+                    </div>
+                    <div class="resouceright resoucerights fl">
+                        <div ng-show="rs==0">
+                            <div class="alldom ziyuandiv" id="all_folder">
+                                <div ng-if="resourceList.length==0" class="tipsall"> <img style="width:330px" src="images/404.png"/>
+                                    <p class="tipscolor">没有查询到资源</p>
+                                </div>
+                                <ul class="ziyuanul">
+                                    <li ng-repeat="i in resourceList track by $index" ng-click="showResoce(i.resourceId,i.resType)"> <span ng-class="{'wx_video':i.resType==1 || i.resType==8 || i.resType==9,'wx_aduo':i.resType==2,'wx_img':i.resType==3,'wx_pdf':i.resType==4,'wx_ppt':i.resType==5,'wx_doc':i.resType==6,'wx_excel':i.resType==7,'wx_qita':i.resType==null}"></span>
+                                        <p class="filetext_title" ng-bind="i.resourceName"></p>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div ng-show="rs==1">
+                            <div class="alldom shitidiv" id="all_folder">
+                                <div ng-if="resourceLists.length==0" class="tipsall"> <img style="width:330px" src="images/404.png"/>
+                                    <p class="tipscolor">没有查询到试题</p>
+                                </div>
+                                <ul class="ziyuanul">
+                                    <li ng-repeat="i in resourceLists track by $index" ng-click="showResoceshiti(i.resourceId,i.downloadUrl,i.resType,i.resourceName)"> <span ng-class="{'wx_shiti':true}"></span>
+                                        <p class="filetext_title" ng-bind="i.resourceName"></p>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--课堂记录弹窗-->
+        <div class="showTc ctrlTc recordInfoTc" style="display: none;">
+            <div class="tcContent  animated rollIn">
+                <div class="box_title"> 
+                	<span class="close_box fr" ng-click="closeWindow($event)">
+                		<img src="images/close.svg" alt="" />
+                	</span> 
+                	<span class="title_box_tc">教学记录</span> 
+                </div>
+                <div class="wx_contentBox  clearfix">
+                    <div class="resouceright ">
+                        <div class="alldom ziyuandiv" id="all_folder">
+                            <div ng-if="recordList.length==0" class="tipsall"> 
+                            	<img style="width:330px" src="images/404.png" alt="" />
+                                <p class="tipscolor">没有查询到记录</p>
+                            </div>
+                            <ul class="ziyuanul">
+                            	<li ng-repeat="i in recordList track by $index" ng-click="showclassRecord(i.id,i.resourceId,i.resourceUrl,i.type,i.name)"> 
+								    <span ng-class="{'wx_img':i.type==2,'wx_img':i.type==3,'wx_doc':i.type==1,'wx_qita':i.type==null}"></span>
+                                    <p class="filetext_title" ng-bind="i.name"></p>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--资源展示方式弹窗-->
+        <div class="showTc ctrlTc resouceTctips" style="display: none;">
+            <div class="resoucetcContent">
+                <div class="box_title">
+                    <span class="closetest_box fr" ng-click="closeshowType()"><img src="images/close.svg"/></span>
+                    <span class="title_box_tc">查看资源</span>
+                </div>
+                <div class="wx_contentBox  clearfix">
+                    <span class="wx_pdbgff"><a target="_blank" href="{{downloadUrl}}">
+                <img src="images/doc.png" alt="" /><br />本地查看</a></span>
+                    <span ng-if="restypehide" class="wx_pdbgff">
+                    <a target="_blank" ng-click="drawclick()"><img src="images/doc.png"/><br />在线查看</a>
+                </span>
+                </div>
+            </div>
+        </div>
+        <!--视频资源播放器弹窗-->
+        <div class="showTc ctrlTc resoucePlayer" style="display: none;">
+            <div class="resoucetcContent videoPlayTc">
+                <span class="closefullscreen fr" ng-click="closeresdetail()">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+				</span>
+                <div class="wx_contentBox video_contentBox clearfix">
+					<video src="" controls id="videoplay" style="width: 100%; height: 100%;"></video>
+                </div>
+            </div>
+        </div>
+        <!--图片资源展示弹窗-->
+        <div class="showTc ctrlTc imgPlayer player" style="display: none;">
+            <div class="resoucetcContent">
+                <span class="closefullscreen fr" ng-click="closeimgtc()">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+                </span>
+				
+				<span class="minimizeResources" id="imgMinimize"  ng-show="onePic==true">
+					<em class="iconfont icon-zuixiaohua"></em>
+				</span>
+				<div class="imgZoom">
+					<button type="button" class="iconfont icon-fangda2" id="big"></button>
+					<button type="button" class="iconfont icon-suoxiao" id="small"></button>
+					<button type="button" class="iconfont icon-zuojiantou" id="left"></button>
+					<button type="button" class="iconfont icon-youjiantou" id="right"></button>
+					<button type="button" class="iconfont icon-shangjiantou" id="top"></button>
+					<button type="button" class="iconfont icon-xiajiantou" id="bottom"></button>
+				    <button type="button" class="iconfont icon-youxuanzhuan" id="zuoxuanzhuan"></button>
+				</div>
+                <div class="wx_contentBox  clearfix wx_transform" style="text-align:center;"> 
+					<img class="wx_imgshowtc" ng-src="{{imgresShowtc}}" alt="" id="wx_imgshowtc"/> 
+				</div>
+				<div class="caozuo" ng-if="onePic==false&&noduibi==false">
+				    <button ng-click="leftChangeImg()" class="page_btn lastPage"><em class="iconfont icon-zuojiantou"></em></button>
+				    <button ng-click="rightChangeImg()" class="page_btn nextPage"><em class="iconfont icon-youjiantou"></em></button>
+				</div>
+            </div>
+        </div>
+		<!--图片对比投屏-->
+		<div class="showTc ctrlTc imgduibiPlayer" style="display:none;">
+		    <div class="resoucetcContent">
+		        <span class="closefullscreen fr" ng-click="closeimgduibiPlayer()">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+		        </span>
+				<!-- 新加的对比 -->
+		        <div class="blocks">
+				  <div class="block" ng-repeat="i in imgscontrasts track by i.name"  ng-class="{'left':i.name==2 || i.name==0,'right':i.name==1 || i.name==3,'bot':i.name==2||i.name==3,'top':i.name==0||i.name==1}"  ng-click="contrastsImg(i.name)">
+					<h1><img ng-src="{{i.imgUrl}}"></h1>
+				  </div>
+				</div>
+				<!-- 新加的对比 -->
+		    </div>
+		</div>
+        <!--ppt资源展示弹窗-->
+        <div class="showTc ctrlTc pptPlayer  player" style="display: none;">
+            <div class="resoucetcContent">
+                <span class="closefullscreen fr" ng-click="closePpttc('.pptPlayer')">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+		        </span>
+				<span class="minimizeResources" id="pptMinimize">
+					<em class="iconfont icon-zuixiaohua"></em>
+				</span>
+                <iframe src="" id="showPPTsrc" frameborder="0"></iframe>
+            </div>
+        </div>
+		<!--word资源展示弹窗-->
+		<div class="showTc ctrlTc wordPlayer  player" style="display: none;">
+		    <div class="resoucetcContent">
+		        <span class="closefullscreen fr" ng-click="closePpttc('.wordPlayer')">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+		        </span>
+				<span class="minimizeResources" id="wordMinimize">
+					<em class="iconfont icon-zuixiaohua"></em>
+				</span>
+		        <iframe src="" id="showWordsrc" frameborder="0"></iframe>
+		    </div>
+		</div>
+        <!--excel资源展示弹窗-->
+        <div class="showTc ctrlTc excelPlayer  player" style="display: none;">
+            <div class="resoucetcContent">
+                <span class="closefullscreen fr" ng-click="closePpttc('.excelPlayer')">
+        			<em class="iconfont icon-guanbi1 exitResTc"></em>
+                </span>
+        		<span class="minimizeResources" id="excelMinimize">
+        			<em class="iconfont icon-zuixiaohua"></em>
+        		</span>
+                <iframe src="" id="showExcelsrc" frameborder="0"></iframe>
+            </div>
+        </div>
+		<!--pdf资源展示弹窗-->
+		<div class="showTc ctrlTc pdfPlayer  player" style="display: none;">
+		    <div class="resoucetcContent">
+		        <span class="closefullscreen fr" ng-click="closePdftc('.pdfPlayer')">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+		        </span>
+				<span class="minimizeResources" id="pdfMinimize">
+					<em class="iconfont icon-zuixiaohua"></em>
+				</span>
+		        <iframe src="" id="showPdfsrc" frameborder="0"></iframe>
+		    </div>
+		</div>
+        <!--资源详情弹窗-->
+        <div class="showTc ctrlTc resoucedetaiTc player" style="display: none;">
+            <div class="resoucetcContent" style="z-index:999">
+                <span class="closefullscreen fr" ng-click="closeshitiwindow()">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+				</span>
+				<span class="minimizeResources" id="testMinimize">
+					<em class="iconfont icon-zuixiaohua"></em>
+				</span>
+                <div class="wx_contentBox  clearfix">
+                    <div class="resouceleft strIconRight fr">
+                        <!-- 用来显示隐藏右侧学生列表的按钮 -->
+                        <div class="changeDisplayStrList iconfont icon-xianshi " ng-click="changeDisplayStrList()"></div>
+                        <ul class="wx_resoceul_jushou" id="wx_resoceul_jushou">
+                            <li class="wx_active" ng-click="banjitczhutu()"><i class="iconfont icon-tongji"></i>学生答题情况</li>
+                            <button class="xiafashiti" ng-click="xiafahomework(1)">下发</button>
+                            <button class="jieshudati wx_disable" disabled="disabled" ng-click="stopanser()">结束答题</button>
+                        </ul>
+                        <div class="studentlistscroll">
+                            <div ng-repeat="i in students track by $index" studentname="{{i.realname}}" class="chengyuanlist icon opacity" ng-click="watchStudetail($event,i.id)">
+                                <em ng-show="strdev.indexOf(i.deviceName)!=-1 || strdev.indexOf(i.id)!=-1" ng-class="{'removestring':strdev.indexOf(i.deviceName)!=-1 || strdev.indexOf(i.id)!=-1}"></em>
+								<img ng-if="i.sex=='男'" src="images/boy.png"/>
+								<img ng-if="i.sex=='女'" src="images/girl.png" />
+                                <div class="title" ng-bind="i.realname"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="resouceright testQuestions">
+						<div class="subjectScreen">
+						    <div class="questionBody" id="zmj_subjectDetail">
+						        <div class="subjectDetail" ng-repeat="i in optionshow" repeat-finish="fun()">
+						            <p class="Shitititle"><span>请使用答题器完成以下<span ng-bind="tishuliang"></span>道题</span></p>
+						            <span class="wx_tixing" ng-if="i.type==2">单选</span><span class="wx_tixing" ng-if="i.type==4">多选</span><span class="wx_tixing" ng-if="i.type==1">判断</span><div ng-bind-html="i.body | trustHtml" class="shititigan"></div>
+						            <ul class="xuanxiang zyx_sup">
+										<li ng-repeat="e in i.option track by $index" ng-bind-html="e.text"></li>
+						            </ul>
+									<div class="zyx_moveBtn clearfix">
+									    <span class="iconfont icon-zuojiantou arrowUpShiti fl" ng-if="$index>0" ng-click="upsubject('#zmj_subjectDetail',$index)"></span>
+									    <span>第{{$index+1}}题</span>
+									    <span class="iconfont icon-youjiantou arrowDownShiti fr" ng-hide="$index+1 == totalsubject" ng-click="downsubject('#zmj_subjectDetail',$index)"></span>
+									</div>
+						            <div class="fontSizeSet">
+						                <span ng-click="smallSize()">小</span>
+						                <span ng-click="middleSize()">中</span>
+						                <span ng-click="bigSize()">大</span>
+						            </div>
+						        </div>
+						    </div>
+						</div>
+                    </div>
+                </div>
+            </div>
+            <!--学生答题情况弹窗-->
+            <div class="showTc ctrlTc getscoreAdminTc" style="display: none;">
+                <div class="tcContent" style="z-index:1000">
+                    <div class="box_title"> <span class="close_box fr" ng-click="closestrscroce($event)"><img src="images/close.svg" alt="" /></span> <span class="title_box_tc"><span ng-bind="currentstrname"></span>的答题统计</span>
+                    </div>
+                    <div class="wx_contentBox clearfix">
+                        <div class="menberight">
+                            <!---成员列表-->
+                            <div class="menber_list_show">
+                                <div class="memberAdminCon" style="display: block;">
+                                    <table border="0" cellspacing="0" cellpadding="0" class="studentScoceenene">
+                                        <thead>
+                                            <tr>
+                                                <th>题号</th>
+                                                <th>分数</th>
+                                                <th>得分数</th>
+                                                <th>正确答案</th>
+                                                <th>答案</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr ng-repeat="i in answers track by $index" ng-class="{'redtr':i.result==0,'bluetr':i.result==1}">
+                                                <td ng-bind="i.datamark"></td>
+                                                <td ng-bind="i.score"></td>
+                                                <td ng-if="i.result==1" ng-bind="{{i.score}}"></td>
+                                                <td ng-if="i.result==0">0</td>
+                                                <td ng-if="i.result==null">0</td>
+                                                <td ng-bind="i.trueAnswer"></td>
+                                                <td ng-bind="i.answer"></td>
+                                            </tr>
+                                    </table> 
+								</div>
+		
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--班级答题情况弹窗-->
+            <div class="showTc ctrlTc getClasstjtc" style="display:none;">
+                <div class="tcContent" style="z-index:1000">
+					<span class="closefullscreen fr" ng-click="closebanjiscroce($event)" style="color:#09c">
+						<em class="iconfont icon-guanbi1 exitResTc colorfff"></em>
+					</span>
+					
+                    <div class="wx_contentBox clearfix">
+                        <div class="menberight" style="display:block">
+                            <!-- 班级答题统计 -->
+                            <div class="pingjuntrue">
+                                <ul class="banjiuldati">
+                                    <li>测试平均正确率：
+                                        <p class="pingjunzitiset" ng-bind="averagelv2+'%'"></p>
+                                    </li>
+                                    <li>已答题人数：<span ng-bind="yidatinum"></span>人</li>
+                                    <li>未答题人数：<span ng-bind="weidatinum"></span>人</li>
+                                </ul>
+                            </div>
+                            <!--班级答题统计表格-->
+                            <div class="grop_list_show classtableset">
+                                <!-- 表格 -->
+                                <div class="paichangetable" style="display:none">
+                                    <table border="0" cellspacing="0" cellpadding="0" class="studentScoce">
+                                        <thead>
+                                            <tr>
+                                                <th ng-click="sortBydatamark()">题号<i class="iconfont icon-paixusheng"></i></th>
+                                                <th>正确人数</th>
+                                                <th ng-click="sortBytrue()">错误人数<i class="iconfont icon-paixu-jiang"></i></th>
+                                                <th>正确率</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr ng-repeat="i in banjiansers track by $index">
+                                                <td ng-click="showTihao($index)" ng-bind="i.datamark" class="tihaodianji"></td>
+                                                <td ng-bind="i.trueCount"></td>
+                                                <td ng-bind="i.count-i.trueCount"></td>
+                                                <td ng-bind="(i.accuracy*100 | number:2)+'%'"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- 柱状图标 -->
+                                <div class="paichange">
+                                    <div id="container2" style="width:100%;height:100%;"></div>
+                                </div>
+                                <div style="text-align:center;"> 
+								    <span id="switchPai" class="lvsebtn">查看表格</span>
+									<span id="studentResultbtn" class="lvsebtn">查看详情</span> 
+								</div>
+                            </div>
+                        </div>
+                        <!--  当前题号的学生答题人数统计 -->
+                        <div class="studentDatirenshu" style="display:none">
+                            <!-- 班级答题统计 -->
+                            <div class="tihaotcset">
+                                <ul class="tiganul">
+                                    <li ng-if="shijuanType!='自主创题'">
+                                        <span class="wx_tixing" ng-if="titype==2">单选</span><span class="wx_tixing" ng-if="titype==4">多选</span><span class="wx_tixing" ng-if="titype==1">判断</span><p class="tiganhtml"></p>
+                                        <ul class="xuanxianguloption">
+                                            <li ng-repeat="i in tioption track by $index" ng-bind-html="i.text" ng-if="i.text.length!=0" ></li>
+                                        </ul>
+                                        
+                                    </li>
+                                    <li ng-if="shijuanType=='自主创题'">
+                                        <span class="wx_tixing" ng-if="imgType==2">单选</span><span class="wx_tixing" ng-if="imgType==4">多选</span><span class="wx_tixing" ng-if="imgType==1">判断</span><p class="tiganhtml"></p>
+                                        <ul class="xuanxianguloption">
+                                            <img ng-src="{{imgShitiShowtc}}" id="mlh_showimg">
+                                        </ul>
+                                    </li>
+                                </ul>
+                                
+                                <!--   选项人数  -->
+                                <div class="wx_selectkuang" style="display:none">
+                                    <p class="slectStrcolor"><span class="xuanxiangkuang" id="changeSelectxx"></span>选项：</p>
+                                    <ul class="xuanxiangullist"></ul>
+                                </div>
+								<div class="switchingQuestions">
+									<i class="iconfont icon-zuojiantou" ng-click="prevQuestionStatistics()" ng-show="Tnum>0"></i>
+									<span></span>
+									<i class="iconfont icon-youjiantou" ng-click="nextQuestionStatistics()" ng-show="Tnum<banjiansers.length-1"></i>
+								</div>
+
+                            </div>
+                            <!--班级答题统计表格-->
+                            <div class="grop_list_show zhutuabcd">
+                                <!-- 柱状图标 -->
+                                <div class="strdatiechart">
+                                    <div id="tihaomain" style="width:100%;height:100%;"></div>
+                                </div>
+                                <div style="text-align:center;"> 
+									<p class="fanhuipai"><i class="iconfont icon-return"></i>返回</span> <span style="color: #ffc107;">试题统计结果</p>
+								</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <!--拍照创题弹窗-->
+        <div class="showTc ctrlTc showShiti" style="display: none">
+            <div class="resoucetcContent" style="z-index:999">
+                <span class="closefullscreen fr" ng-click="closeshowShitiwindow()">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+				</span>
+				<span class="minimizeResources" id="shiTiMinimize2">
+					<em class="iconfont icon-zuixiaohua"></em>
+				</span>
+                <div class="wx_contentBox  clearfix">
+                    <div class="resouceleft strIconRight fr">
+                        <!-- 用来显示隐藏右侧学生列表的按钮 -->
+                        <div class="changeDisplayStrList iconfont icon-xianshi " ng-click="changeDisplayStrList()"></div>
+                        <ul class="wx_resoceul_jushou" id="wx_resoceul_jushou">
+                            <li class="wx_active" ng-click="banjitczhutu()"><i class="iconfont icon-tongji"></i>学生答题情况</li>
+                            <button class="xiafashiti" ng-click="xiafahomework(3)">下发</button>
+                            <button class="jieshudati wx_disable" disabled="disabled" ng-click="stopanser()">结束答题</button>
+                        </ul>
+                        <div class="studentlistscroll">
+                            <div ng-repeat="i in shiTistudents track by $index" studentname="{{i.realname}}" class="chengyuanlist icon opacity" ng-click="watchStudetail($event,i.id)">
+                                <em ng-show="strdev.indexOf(i.deviceName)!=-1 || strdev.indexOf(i.id)!=-1" ng-class="{'removestring':strdev.indexOf(i.deviceName)!=-1 || strdev.indexOf(i.id)!=-1}"></em>
+								<img ng-if="i.sex=='男'" src="images/boy.png"/>
+								<img ng-if="i.sex=='女'" src="images/girl.png" />
+                                <div class="title" ng-bind="i.realname"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="resouceright testQuestions">
+						<div class="subjectScreen">
+						    <div class="questionBody">
+						        <div class="subjectDetail chuangti_cont">
+						        	<span class="wx_tixing" ng-if="imgType == 1">判断</span>
+						            <span class="wx_tixing" ng-if="imgType == 2">单选</span>
+						            <span class="wx_tixing" ng-if="imgType == 3">填空</span>
+						            <span class="wx_tixing" ng-if="imgType == 4">多选</span>
+						            <span class="wx_tixing" ng-if="imgType == 5">阅读理解</span>
+						            <span class="wx_tixing" ng-if="imgType == 6">解答</span>
+						            <span class="wx_tixing" ng-if="imgType == 7">完形</span>
+						            <span class="wx_tixing" ng-if="imgType == 8">材料</span>
+						            <img  ng-src="{{imgShitiShowtc}}" alt="" id="mlh_chuangImgshowtc"/>
+						        </div>
+						    </div>
+						</div>
+                    </div>
+                </div>
+            </div>
+            <!--学生答题情况弹窗-->
+            <div class="showTc ctrlTc getscoreAdminTc" style="display: none;">
+                <div class="tcContent" style="z-index:1000">
+                    <div class="box_title"> <span class="close_box fr" ng-click="closestrscroce($event)"><img src="images/close.svg" alt="" /></span> <span class="title_box_tc"><span ng-bind="currentstrname"></span>的答题统计</span>
+                    </div>
+                    <div class="wx_contentBox clearfix">
+                        <div class="menberight">
+                            <!---成员列表-->
+                            <div class="menber_list_show">
+                                <div class="memberAdminCon" style="display: block;">
+                                    <table border="0" cellspacing="0" cellpadding="0" class="studentScoceenene">
+                                        <thead>
+                                            <tr>
+                                                <th>题号</th>
+                                                <th>分数</th>
+                                                <th>得分数</th>
+                                                <th>正确答案</th>
+                                                <th>答案</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr ng-repeat="i in answers track by $index" ng-class="{'redtr':i.result==0,'bluetr':i.result==1}">
+                                                <td ng-bind="i.datamark"></td>
+                                                <td ng-bind="i.score"></td>
+                                                <td ng-if="i.result==1" ng-bind="{{i.score}}"></td>
+                                                <td ng-if="i.result==0">0</td>
+                                                <td ng-if="i.result==null">0</td>
+                                                <td ng-bind="i.trueAnswer"></td>
+                                                <td ng-bind="i.answer"></td>
+                                            </tr>
+                                    </table> 
+								</div>		
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+		
+		<!--查看学生作答详情弹框 这种-->
+		<div class="studentResultPopup">
+			   <h4>学生答题正确率</h4>
+			   <span class="closefullscreen" style="color:#09c">
+					<em class="iconfont icon-guanbi1 exitResTc colorfff"></em>
+				</span>
+				<div class="studentResultTable">
+					 <table>
+						<thead>
+							 <tr>
+								 <th>姓名</th>
+								 <th>对的题数</th>
+								 <th>错的题数</th>
+								 <th>正确率</th>
+								 <th>掌握程度</th>
+							 </tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="i in studentResultData">
+								<td ng-bind="i.realname"></td>
+								<td ng-bind="i.trueCount"></td>
+								<td ng-bind="i.count-i.trueCount"></td>
+								<td ng-bind="i.ratio"></td>
+								<td><img ng-src="images/grade/star_{{i.star}}.png" alt=""></td>
+							</tr>
+						</tbody>	    		    
+				    </table>
+				</div>
+		</div>
+
+		<!--课堂记录详情弹窗-->
+		<div class="showTc ctrlTc recorddetaiTc" style="display: none;">
+            <div class="resoucetcContent classrecord" style="z-index:999">
+                <span class="closefullscreen fr" ng-click="closerecordwindow()">
+					<em class="iconfont icon-guanbi1 exitResTc"></em>
+				</span>
+                <div class="wx_contentBox  clearfix">
+                    <div class="resouceleft strIconRight fr" id="strIconRight">
+                        <!-- 用来显示隐藏右侧学生列表的按钮 -->
+                        <div class="changeDisplayStrList iconfont icon-xianshi " ng-click="changeDisplayStrList()"></div>
+                        <ul class="wx_resoceul_jushou" id="wx_resoceul_jushou">
+                            <li class="wx_active" ng-click="banjitczhutu('yidati')"><i class="iconfont icon-liebiao"></i>学生答题情况</li>
+                        </ul>
+                        <div class="studentlistscroll">
+                            <div ng-repeat="i in classStudents track by $index" studentname="{{i.realname}}" class="chengyuanlist icon" ng-click="classRcordstu(i.id,i.realname)">
+                   
+								<div  ng-class="{'active':StuAnswerList.indexOf(i.id)!=-1,'stuActive':stuName==i.realname}" class="title" ng-bind="i.realname"></div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="resouceright testQuestions">
+						<div class="subjectScreen">
+						    <div class="questionBody" id="mlh_subjectDetail">
+						    	
+						        <div class="subjectDetail mlh_shitishowtc"   ng-repeat="i in recordoptionshow" repeat-finish="fun()">
+						            <span class="wx_tixing" ng-if="i.type==2">单选</span><span class="wx_tixing" ng-if="i.type==4">多选</span><span class="wx_tixing" ng-if="i.type==1">判断</span><div style="text-indent:8rem" ng-bind-html="i.body | trustHtml"></div>
+						            <ul class="xuanxiang">
+						                <li ng-repeat="e in i.option track by $index" ng-bind-html="e.text | trustHtml"></li>
+						            </ul>
+						            <ul class="stuAnswer" style="display: none;">
+						            	<li><span ng-bind="stuName"></span>的答案：<span  ng-bind="Stuanswers[$index].answer"></span></li>
+						            </ul>
+									<div class="zyx_moveBtn clearfix">
+									    <span class="iconfont icon-zuojiantou arrowUpShiti fl" ng-if="$index>0" ng-click="upsubject('#mlh_subjectDetail',$index)"></span>
+									    <span>第{{$index+1}}题</span>
+									    <span class="iconfont icon-youjiantou arrowDownShiti fr" ng-hide="$index+1 == totalsubject" ng-click="downsubject('#mlh_subjectDetail',$index)"></span>
+									</div>
+						            
+						        </div>
+						        <div class="subjectDetail" id="mlh_imgshowtc">
+						        	<img class="wx_imgshowtc" ng-src="{{recordUrl}}" alt="" />
+						        	<ul class="stuAnswer" ng-if="chuangtiType==3 && answerShow==true">
+						            	<li><span ng-bind="stuName"></span>的答案：<span  ng-bind="Stuanswers[0].answer"></span></li>
+						            </ul>
+						        </div>
+						    </div>
+						</div>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+    <!--引入画板页面-->
+    <div id="drawing">
+		<span class="closefullscreen fr" ng-click="backhome()" style="color:#09c">
+			<em class="iconfont icon-guanbi1 exitResTc"></em>
+		</span>
+		<div id="drawtwo"></div>
+	</div>
+	
+	<!--试题退出确认框-->
+	<div class="showTc signOutTc testSinOut" style="display: none;">
+	    <div class="tchide"></div>
+	    <div class="tcContent" style="z-index:1000">
+	        <div class="box_title"> <span class="close_box fr" ng-click="closeSinOutWindow($event)"><img src="images/close.svg" alt="" /></span> <span class="title_box_tc">提示</span> </div>
+	        <div class="text_shadow tips_div">
+	            <p>确认退出？</p>
+	        </div> 
+			<span class="btn surecolor logout_sure" ng-click="sureStopanser()">确认</span>
+			<span class="btn cancelcolor color_hui logoutcancel" ng-click="closeSinOutWindow($event)">取消</span> 
+		</div>
+	</div>
+	<!--抢答-->
+	<div class="showTc signOutTc qiangda" style="display: none;">
+	    <div class="tchide"></div>
+	    <div class="tcContent" style="z-index:1000">
+	        <div class="box_title"> <span class="close_box fr" ng-click="closeqiangda($event)"><img src="images/close.svg" alt="" /></span> <span class="title_box_tc">抢答</span> </div>
+	        <div class="text_shadow" style="margin-top:5rem;">
+				<img src="images/qiangda.png" ng-if="weiqiangda">
+				<img src="images/boy.png" ng-if="qiangdanan">
+				<img src="images/girl.png" ng-if="qiangdanv">
+	            <p style="font-size:3rem;color:#000" class="qiangdaname">准备好了吗?</p>
+	        </div>
+			<div class="box_foot" ng-click="qiangdaBegin()" ng-if="qiangdaBegintrue">开始抢答</div>
+			<div class="box_foot" ng-click="qiangdastop()"ng-if="qiangdastoptrue">结束抢答</div>
+		</div>
+	</div>
+	<!-- 倒计时 -->
+		<div id="clock" class="HYPE_element_container clockdiv">
+				<div class="HYPE_element">
+					<div class="HYPE_element_container" class="clockdivcont">
+						<div class="HYPE_element clockpositin">
+							<div id="timeshowX">00 00</div>
+							<div id="h2X">:</div>
+							<div id="h_timeX"></div>
+							<img id="backX" src="images/witvlak.jpg" width="440" height="197">
+							<input type="image" src="images/timer_sounds_btn.png" id="soundsX" onclick="soundsbtnX()" height="15">
+							<input type="image" src="images/play_btn.png" id="startX" onclick="startbtnX()" style="width:60px!important;height:60px!important">
+							<input type="image" src="images/pauze_btn.png" id="pauzeX" onclick="pauzebtnX()" height="60" style="visibility: hidden;width:60px!important;height:60px!important">
+							<input type="image" src="images/plusbtn_timer.png" id="plus10X" onclick="plus10btnX()" height="30">
+							<input type="image" src="images/minbtn_timer.png" id="min10X" onclick="min10btnX()" height="30">
+							<input type="image" src="images/plusbtn_timer.png" id="plus1X" onclick="plus1btnX()" height="30">
+							<input type="image" src="images/minbtn_timer.png" id="min1X" onclick="min1btnX()" height="30">
+							<input type="image" src="images/plusbtn_timer.png" id="plus0010X" onclick="plus0010btnX()" height="30">
+							<input type="image" src="images/minbtn_timer.png" id="min0010X" onclick="min0010btnX()" height="30">
+							<div id="yellow1X">
+								<img id="yellow_vlak1X" src="images/yellow.jpg" width="72" height="0">
+							</div>
+							<div id="yellow2X">
+								<img id="yellow_vlak2X" src="images/yellow.jpg" width="72" height="55">
+							</div>
+							<img id="yellow_vlak3X" src="images/yellow.jpg" width="4" height="55">
+							<img id="zandloperX" src="images/zandloper186.png" height="186">
+							<img id="back_play_pauzeX" src="images/timer_sound_back_20.png" height="60">
+							<div id="totalsoundsX" style="visibility: hidden;">
+								<img id="sounds_backX" src="images/timer_sound_back_20.png" height="35">
+								<input type="image" src="images/timer_dingdong_btn.png" id="sounds1btnX" onmousedown="sounds1_btnX()" ontouchstart="sounds1_btnX()" height="35">
+								<input type="image" src="images/timer_cowbell_btn.png" id="sounds2btnX" onmousedown="sounds2_btnX()" ontouchstart="sounds2_btnX()" height="35">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!--实物展台视频资源播放器弹窗-->
+			<div class="showTc ctrlTc zhantai" style="display: none;">
+			    <div class="resoucetcContent videoPlayTc" style="z-index:9991">
+			        <span class="closefullscreen fr" ng-click="closezhantaidetail()">
+						<em class="iconfont icon-guanbi1 exitResTc"></em>
+					</span>
+			        <div class="wx_contentBox video_contentBox clearfix">
+			            <div id="remoteVideosContainer" ></div>
+			        </div>
+			    </div>
+			</div>
+    <!-- Javascript -->
+    <script src="javascripts/mCustomScrollbar/jquery.mCustomScrollbar.concat.min.js"></script>
+    <script src="javascripts/config.js"></script>
+    <script src="javascripts/scripts.js"></script>
+    <script src="javascripts/echarts.min.js"></script>
+	<script src="javascripts/clock.js"></script>
+	<script src="javascripts/zzsc.js"></script>
+	<script src="javascripts/main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,189 @@
+var room = require("../modules/entity/Room.js")
+const screenshot = require('screenshot-desktop')
+const fileupload = require('./fileupload');
+
+function chatSocket() {
+	return this;
+}
+module.exports = chatSocket;
+chatSocket.Start = function Start(io) {
+
+	var rooms = new Array();
+	var userList = new Array();
+	var userSocketMap = {};
+
+	io.sockets.on('connection', function(socket) {
+		//接收用户创建房间的指令
+		socket.on('cRoom', function(data) {
+			var dataobj
+			if (typeof(data) == "string") {
+				dataobj = JSON.parse(data)
+			} else {
+				dataobj = data
+			}
+			var repCreate = false;
+			//判断房间是否存在
+			rooms.forEach(function(r) {
+				if (r.name == dataobj.classId) {
+					repCreate = true;
+				}
+			});
+
+			if (!repCreate) {
+				leaveMyInRoom(dataobj, socket, rooms);
+				var r = new room(dataobj.classId, dataobj.userId);
+				rooms.push(r);
+				socket.join(dataobj.classId);
+				console.log("cRoom:：classId====" + dataobj.classId);
+			}
+		});
+
+		socket.on('jeic', function(data) {
+
+			if (data.name == "xiake") {
+				var path = require('path');
+				var glob = require('glob')
+				var fs = require('fs');
+				var Promise = require('bluebird');
+				var readdir = Promise.promisify(fs.readdir);
+				var rename = Promise.promisify(fs.rename);
+				var readFile = Promise.promisify(fs.readFile);
+				var writeFile = Promise.promisify(fs.writeFile);
+				var request = Promise.promisify(require('request'));
+
+				function updateFile(filepath, dir) {
+					let tmp_fileName = filepath.split('/').slice(2).join('/');
+					//录屏文件分片上传
+					fileupload.chunkUploadFile(filepath);
+				}
+
+
+				glob.sync('C:/luping/*.*').forEach(function(entry) {
+					console.log(entry);
+					basename = path.basename(entry)
+					if (/(webm)$/.test(basename)) {
+						updateFile(entry)
+					}
+				})
+			}
+
+			var tempArr = Object.keys(socket.rooms);
+			var room;
+			for (var i = 0; i < tempArr.length; i++) {
+				if (tempArr[i] == socket.id) {
+					tempArr.splice(i, 1);
+				}
+			}
+			room = tempArr[0];
+			var dataobj
+			if (typeof(data) == "string") {
+				console.log("pad发送jeic：data.name====" + data)
+				dataobj = JSON.parse(data)
+			} else {
+				console.log("大屏发送jeic：data.name====" + data)
+				dataobj = data
+			}
+			if (dataobj.name == "sureBeginClass") {
+				io.emit('jeic', dataobj);
+			} else {
+				io.to(room).emit('jeic', dataobj);
+			}
+			
+			if(dataobj.name=="annotation"){
+				//截图
+				screenshot().then((img) => {
+				    var imgsrc= img.toString('base64');
+					var imghost=''+imgsrc
+					io.emit('jeic', {"name":"jieping","data":imghost});
+				}).catch((err) => {
+					throw err
+				})
+			}
+		});
+
+		socket.on('draw', function(data) {
+			socket.broadcast.emit('draw', data);
+			console.log(data)
+		});
+
+		socket.on('config', function(data) {
+			socket.broadcast.emit('config', data);
+		});
+
+
+		/*** ppt页面的socket.io连接*/
+		socket.on('ppt', function(data) {
+			io.emit('ppt', data);
+		});
+
+		socket.on('leaveRoom', function(data) {
+			console.log(data);
+			leaveMyInRoom(data, socket, rooms);
+			var index = userList.indexOf(data.user);
+			if (index != -1) {
+				userList.splice(index, 1);
+			}
+			socket.broadcast.emit('say', {
+				value: ' [' + data.user + ']离开了房间!',
+				'user': 'System'
+			});
+			io.emit('refRooms', {
+				rooms: rooms
+			});
+		});
+
+
+		socket.on('joinRoom', function(data) {
+			console.log("data:" + data);
+
+			var dataobj
+			if (typeof(data) == "string") {
+				dataobj = JSON.parse(data)
+			} else {
+				dataobj = data
+			}
+			console.log("dataobj:" + dataobj);
+			//是否重复加入
+			var repJoin = false;
+			leaveMyInRoom(dataobj, socket, rooms);
+			rooms.forEach(function(r) {
+				if (r.name == dataobj.classId) {
+					repJoin = r.userContains(dataobj.user);
+					if (!repJoin)
+						r.addUser(dataobj.user);
+				}
+			});
+			if (!repJoin) {
+				socket.join(dataobj.classId);
+
+
+			} else {}
+
+		});
+		socket.on('disconnect', function(socket) {
+			//console.log(socket.);
+			console.log("有人断开链接:socket.id=====" + socket.id)
+		});
+	});
+}
+
+function leaveMyInRoom(data, socket, rooms) {
+	//记录房间用户为0的序号
+	var delRoom = -1;
+	var index = 0;
+	if (data.currRoom != '无') {
+		socket.leave(data.currRoom);
+		rooms.forEach(function(r) {
+			if (r.name == data.currRoom) {
+				r.removeUser(data.user);
+				if (r.getUsers().length == 0) {
+					delRoom = index;
+				}
+			}
+			index++;
+		});
+	}
+	if (delRoom != -1) {
+		rooms.splice(delRoom, 1);
+	}
+}

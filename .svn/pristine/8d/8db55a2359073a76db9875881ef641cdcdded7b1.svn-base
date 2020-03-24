@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Websocket Drawing Board</title>
+    <link href="stylesheets/draw/zyx.css" rel="stylesheet">
+    <link href="stylesheets/draw/iconfont/iconfont.css" rel="stylesheet">
+</head>
+
+<body>
+    
+    <div id='svgBox'>
+        <svg class="mySvg" id="svg0" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
+    </div>
+    <!-- 工具栏 -->
+    <div class="tool-box">
+        <!-- 调色板 -->
+        <div class="item zyx_tool">
+            <div class="zyx_hover itemBox">
+                <i class="icon iconfont" id='colorBox'>&#xe718;</i>
+                <div class="menu" id="color-selector">
+                    <ul>
+                        <li class="zyx_hover"><span class="circleChild" id="#000000" style="background:#000000"></span></li>
+                        <li class="zyx_hover"><span class="circleChild" id="#f7412d" style="background:#f7412d"></span></li>
+                        <li class="zyx_hover"><span class="circleChild" id="#47b04b" style="background:#47b04b"></span></li>
+                        <li class="zyx_hover"><span class="circleChild" id="#1194f6" style="background:#1194f6"></span></li>
+                        <li class="zyx_hover"><span class="circleChild" id="#ffc200" style="background:#ffc200"></span></li>
+                        <li class="zyx_hover"><span class="circleChild" id="#9d1bb2" style="background:#9d1bb2"></span></li>
+                        <li class="zyx_hover"><span class="circleChild" id="#7a5547" style="background:#7a5547"></span></li>
+                    </ul>
+                    <p class="penSize">画笔大小： <span id="penVal">10</span></p>
+                    <input id="penInput" value="10" step="1" type="range" min="10" max="100">
+                </div>
+                <em class="zyx_circleBg"></em>
+            </div>
+        </div>
+        <!-- 铅笔 -->
+        <div class="item">
+            <div class="zyx_hover itemBox" style="background-color:#E3E3E3;">
+                <i class="icon iconfont" id="path">&#xe678;</i>
+            </div>
+        </div>
+        <!-- 删除清空 -->
+        <div class="item zyx_tool">
+            <div class="zyx_hover itemBox">
+                <i class="icon iconfont" id='delBox'>&#xe643;</i>
+                <div class="mask clear-box">
+                    <div class="hide"></div>
+                    <div class="con">
+                        <div class="title clearfix" >
+                            <span class="fl">提示</span>
+                            <i class="fr icon iconfont close">&#xe61f;</i>
+                        </div>
+                        <span class="text">确认清空吗？</span>
+                        <div class="btn">
+                            <span class="empty">确认</span>
+                            <span class='close'>取消</span>
+                        </div>
+                    </div>	  
+                </div>
+            </div>
+        </div>
+        <!-- 工具 -->
+        <div class="item zyx_tool">
+            <div class="zyx_hover itemBox">
+                <i class="icon iconfont" id='toolBox'>&#xe61e;</i>
+                <div class="menu" id="shape-selector">
+                    <ul>
+                        <li class="zyx_hover"><i class="icon iconfont child" id="line">&#xe653;</i></li>
+                        <li class="zyx_hover"><i class="icon iconfont child" id="rect">&#xe790;</i></li>
+                        <li class="zyx_hover"><i class="icon iconfont child" id="circle">&#xe72f;</i></li>
+                        <li class="zyx_hover"><i class="icon iconfont child" id="ellipse">&#xe791;</i></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- 换背景 -->
+        <div class="item zyx_tool">
+            <div class="zyx_hover itemBox">
+                <i class="icon iconfont" id='choose-bg'>&#xe610;</i>
+                <div class="menu" id="bgBox">
+                    <ul>
+                        <li class="zyx_hover"><i class="icon iconfont bg" id="bg1">&#xe75b;</i></li>
+                        <li class="zyx_hover"><i class="icon iconfont bg" id="bg2">&#xe653;</i></li>
+                        <li class="zyx_hover"><i class="icon iconfont bg" id="bg3">&#xe737;</i></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- 导出 -->
+        <div class="item">
+            <div class="zyx_hover itemBox">
+                <i class="icon iconfont"  id="file">&#xe607;</i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分页 -->
+    <div class="clearfix pageBox clearfix">
+        <ul class="clearfix fl  zyx_page">
+            <li class="active">1</li>
+        </ul>
+        <span id="newSvg" title="添加画布，最多有4个画布！">+</span>
+    </div>
+</body>
+
+
+<script src="javascripts/jquery-1.8.2.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="javascripts/draw/svgPainter.js"></script>
+<script src="javascripts/draw/screen.js"></script>
+<script type="text/javascript">
+	//判断是移动端还是pc端
+	if ((navigator.userAgent.match(/(phone|pad|pod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i))) {
+		$("body").css({
+			"width": "1920px",
+			"height": "900px!important",
+		})
+		
+		$("#svgBox").css({
+			"width": "1920px",
+			"height": "900px!important",
+		})
+		
+		$(".tool-box").css({
+			"width": "7em"
+		})
+		$(".tool-box .item,.tool-box .item .zyx_hover").css({
+			"width": "6em",
+			"height": "6em",
+			"margin": "15px auto",
+			
+		})
+		$(".tool-box .item .zyx_hover").css({
+			"width": "5em",
+			"height": "5em",
+		})
+		$(".tool-box .item i").css({
+			"font-size": "3.2em"
+		})
+		
+		$(".tool-box .item").css({
+			"width": "6em",
+			"height": "6em",
+		})
+		$(".tool-box .item em.zyx_circleBg").css({
+			"width": "2em",
+			"height": "2em",
+			"margin": "48px 0 0 -31px",
+		})
+		$(".tool-box .item .menu").css({
+			"left": "7em",
+		})
+		$(".tool-box .item #color-selector .circleChild").css({
+			"width": "2.2em",
+			"height": "2.2em",
+			"border-radius": "2em",
+		})
+		$(".tool-box .item #color-selector .penSize").css({
+			"font-size": "1.6em",
+			"margin-bottom": "1.2em",
+		})
+		$(".tool-box .item #color-selector .penSize span").css({
+			"font-size": "1.1em",
+			"padding": "0.18em",  
+			"border-radius": "20%",   
+		})
+		$(".tool-box .item #color-selector input[type=range]").css({
+			"height": "1.1em",  
+		})
+}
+			
+</script>
+<script>
+    var svgNs = 'http://www.w3.org/2000/svg';
+    var socket = io.connect(window.location.origin);
+    var svg = document.getElementById('svg0');
+    var painter = new Painter('svg0');
+    var arrPainter = [painter];//存储每个painter
+    var arrSvg = [svg];//存储每个svg
+    var color = ''; // 存储当前画笔颜色
+    var toolColor = '#000';//储存工具点击画笔颜色
+    var BrushSize = '10';//画笔大小
+    var addSvgId = 0; //创建画布时id
+    color = painter.color;
+	
+	
+	function init(){
+        $("#shape-selector,#color-selector,#bgBox").hide();
+        if(painter.shape == 'path' && painter.color != "white"){
+            $('.itemBox').css({
+                "background-color" :'#f0f0f0'
+            });
+            $('#path').parent().css({
+                "background-color" :'#E3E3E3'
+            });
+        }else if(painter.shape != 'path' && painter.color != "white"){
+            $('.itemBox').css({
+                "background-color" :'#f0f0f0'
+            });
+            $('#toolBox').parent().css({
+                "background-color" :'#E3E3E3'
+            });
+        }else if(painter.shape == 'path' && painter.color == "white"){
+            $('.itemBox').css({
+                "background-color" :'#f0f0f0'
+            });
+            $('#eraser').parent().css({
+                "background-color" :'#E3E3E3'
+            });
+        }
+    }
+	
+    // 同步操作
+    socket.on('config', function (data) {
+        // 调色板
+        if(data.name == "colorSeletor"){ colorSeletor(data.color); }
+        // 调色板--修改画笔大小
+        if(data.name == 'penInput'){ penInput(data.width,data.color); }
+        // 调色板--修改画笔大小
+        if(data.name == 'penInputChange'){ penInputChange(); }
+        // 调色板--菜单展示和隐藏
+        if(data.name == "colorBox"){ colorBox(); }
+        // 工具
+        if(data.name == 'shapeSelector'){ shapeSelector(); }
+        // 工具 -- 菜单展示和隐藏
+        if(data.name == "toolBox"){  toolBox(); }
+        // 导出
+        if(data.name == "file"){  file(); }
+        // 删除清空--按钮
+        if(data.name == 'delBox'){ delBox(); }
+        // 删除清空--确认按钮
+        if(data.name == 'empty'){ empty(); }
+        // 删除清空--取消和关闭按钮
+        if(data.name == 'close'){ close(); }
+        // 刷新
+        if(data.name == 'reFresh'){ reFresh(); }
+        // 添加画布
+        if(data.name == 'addSvg'){ addSvgFun(data.addSvgId); }
+        // 切换画布
+        if(data.name == 'changSvg'){ changSvgFun(data.changSvgId); }
+        // 铅笔
+        if(data.name == 'path'){ path(data.width); }
+        // 换背景
+        if(data.name == 'chooseBg'){ chooseBg(); }
+        // 换背景--菜单展示和隐藏
+        if(data.name == 'bgBox'){ bgBox(data.bgName); }
+        
+         // 初始化
+        if(data.name == 'init'){ init(); }
+        
+        // 循环属性
+        for (x in data) {
+            painter[x] = data[x];
+        }
+    }, false);
+
+    // 监听绘图,实现绘图的同步
+    painter.onDiff = function (diff) {
+        socket.emit('draw', diff);
+    };
+    socket.on('draw', function (diff) {
+        if(arrPainter[0]){
+            arrPainter[0].drawDiff(diff);
+        }else if(arrPainter[1]){
+            arrPainter[1].drawDiff(diff);
+        }else if(arrPainter[2]){
+            arrPainter[2].drawDiff(diff);
+        }else if(arrPainter[3]){
+            arrPainter[3].drawDiff(diff);
+        }
+    });
+
+     //创建画布
+     $("#newSvg").click(function() {
+        addSvgFun();
+        socket.emit('config', {"name":'addSvg',"addSvgId":addSvgId});
+    });
+    function addSvgFun() {
+        if (addSvgId < 3) {
+            addSvgId++;
+            if (addSvgId == 3) {
+                $("#newSvg").css("cursor", "not-allowed");
+            };
+        }else{
+            return false;
+        }
+        $(".mySvg").hide();
+        $(".pageBox>ul").append('<li>' + (addSvgId + 1) + '</li>');
+        $('.pageBox>ul>li').eq(addSvgId).addClass('active').siblings().removeClass('active');
+        $('.itemBox').css({
+           "background-color" :'#f0f0f0'
+        });
+        $('#path').parent().css({
+           "background-color" :'#E3E3E3'
+        });
+
+        var oSvg = document.createElementNS(svgNs,"svg");
+        oSvg.setAttribute('class',"mySvg");
+        oSvg.setAttribute('id','svg'+addSvgId);
+        oSvg.setAttribute('xmlns',svgNs);
+        $("#svgBox").append(oSvg);
+
+        var circleBg = $('.zyx_circleBg').css('background-color');
+        var pathSize = $('#penInput').val();
+        svg = document.getElementById('svg'+addSvgId);
+        painter = new Painter('svg'+addSvgId);
+        painter.color = circleBg;
+        color = circleBg;
+        painter.width = pathSize;
+        arrPainter.push(painter);
+        arrSvg.push(svg);
+        painter.onDiff = function (diff) {
+            socket.emit('draw', diff);
+        };
+    }
+    
+    //切换画布
+    $(".zyx_page").on("click", 'li', function() {
+        changSvgId = $(this).index();
+        changSvgFun(changSvgId);
+        socket.emit('config', {"name":'changSvg',"changSvgId":changSvgId});
+    });
+    function changSvgFun(index) { 
+        $(".pageBox>ul>li").eq(index).addClass('active').siblings().removeClass('active');
+        $(".mySvg").eq(index).show().siblings().hide();
+        $('.itemBox').css({
+           "background-color" :'#f0f0f0'
+        });
+        $('#path').parent().css({
+           "background-color" :'#E3E3E3'
+        });
+
+        var circleBg = $('.zyx_circleBg').css('background-color');
+        var pathSize = $('#penInput').val();
+        svg = arrSvg[index];
+        painter = arrPainter[index];
+        for(var i=0;i<arrPainter.length;i++){
+            arrPainter[i].color = circleBg;
+            color = circleBg;
+            arrPainter[i].width = pathSize;
+            arrPainter[i].shape = "path";
+        }
+        painter.onDiff = function (diff) {
+            socket.emit('draw', diff);
+        };
+    };
+
+    //刷新
+    // socket.on('connect', function () {
+    //     reFresh();
+    //     socket.emit('config',{"name":'reFresh'});
+    // });
+    function reFresh(){
+        painter.color = '#000';
+        painter.width = '10';
+        painter.clear();
+        painter.hideHandleBar();
+        $('.zyx_circleBg').css({"background":'#000'});
+        $('.zyx_page').html('<li class="active">1</li>');
+    }
+
+
+    // 调色板
+    $('.circleChild').on('click',function(){
+        var colorName =  $(this).attr('id');
+        colorSeletor(colorName);
+        socket.emit('config', {"name":'colorSeletor',"color": colorName,"width":BrushSize});
+        
+    })
+    function colorSeletor(colorName){
+        painter.color = colorName;
+        color = colorName;
+        toolColor = colorName;
+        painter.width = BrushSize;
+        $('.zyx_circleBg').css({"background":colorName});
+        $('#color-selector').hide();
+    }
+     
+    //调色板--修改画笔大小
+    $("#penInput").on("input", function() {
+        var circleBg = $('.zyx_circleBg').css('background-color');
+        BrushSize = $(this).val();
+        penInput(BrushSize,circleBg);
+        socket.emit('config', {"name":'penInput',"width":BrushSize,"color":circleBg});
+    });
+    function penInput(BrushSize,circleBg){
+        $('#penInput').val(BrushSize);
+        $("#penVal").html(BrushSize);
+        for(var i=0;i<arrPainter.length;i++){
+            arrPainter[i].width = BrushSize;
+            arrPainter[i].color = circleBg;
+            color = circleBg;
+            toolColor = circleBg
+        }
+    }
+    $("#penInput").on('change',function(){
+        penInputChange();
+        socket.emit('config', {"name":'penInputChange'});
+    })
+    function penInputChange(){
+        $('#color-selector').hide();
+    }
+   
+    // 调色板--菜单展示和隐藏
+    $("#colorBox").on('click',function(){
+        colorBox();
+        socket.emit('config', {"name":'colorBox'});
+    })
+    function colorBox(){
+        $('.itemBox').css({
+           "background-color" :'#f0f0f0'
+        });
+        $('#colorBox').parent().css({
+           "background-color" :'#E3E3E3'
+        });
+        if ($("#color-selector").is(':hidden')) {
+            $("#color-selector").css('display','block');
+        } else {
+            $("#color-selector").css('display','none');
+        }
+        $('#shape-selector').hide();
+        $("#bgBox").hide();
+    }
+
+    // 铅笔
+    $('#path').on('click',function(){
+        path(BrushSize);
+        socket.emit('config', {"name":'path',"width":BrushSize});
+    });
+    function path(BrushSize){
+        if(painter.color == "white"){
+            for(var i=0;i<arrPainter.length;i++){
+                arrPainter[i].shape = 'path';
+                arrPainter[i].width = BrushSize;
+                arrPainter[i].color = toolColor;
+                color = toolColor;
+            }
+        }else{
+            for(var i=0;i<arrPainter.length;i++){
+                arrPainter[i].shape = 'path';
+                arrPainter[i].width = BrushSize;
+                arrPainter[i].color = color;
+                color = color;
+            }
+        }
+        $('.itemBox').css({
+           "background-color" :'#f0f0f0'
+        });
+        $('#path').parent().css({
+           "background-color" :'#E3E3E3'
+        });
+        $('#color-selector').hide();
+        $('#shape-selector').hide();
+        $('#bgBox').hide();
+    }
+
+    // 删除清空--按钮
+    $('#delBox').on('click',function(){
+        delBox();
+        socket.emit('config',{"name":'delBox'});
+    })
+    function delBox(){
+        $('.clear-box').show();
+        $('.itemBox').css({
+           "background-color" :'#f0f0f0'
+        });
+        $('#delBox').parent().css({
+           "background-color" :'#E3E3E3'
+        });
+        $('#color-selector').hide();
+        $('#shape-selector').hide();
+    }
+
+    // 删除清空--确认按钮
+    $('.empty').on('click',function(){
+        empty();
+        socket.emit('config',{"name":'empty'});
+    })
+    function empty(){
+        painter.clear();
+        painter.hideHandleBar();
+        $('.clear-box').hide();
+    }
+
+    // 删除清空--取消和关闭按钮
+    $('.close').on('click',function(){
+        close();
+        socket.emit('config',{"name":'close'});
+    })
+    function close(){
+        $('.clear-box').hide();
+    }
+
+    // 工具
+    $('.child').on('click',function(){
+        var shapeName = $(this).attr('id');
+        painter.shape = shapeName;
+        painter.width = BrushSize;
+        shapeSelector();
+        if(painter.color == "white"){
+            painter.color = toolColor;
+            color = toolColor;
+            socket.emit('config', {"name":'shapeSelector',"color": toolColor,"width":BrushSize});
+        }else{
+            painter.color = color;
+            color = color;
+            socket.emit('config', {"name":'shapeSelector',"color": color,"width":BrushSize});
+        }
+    });
+    function shapeSelector(){
+        $('#shape-selector').hide();
+    }
+    
+
+    // 工具--菜单展示和隐藏
+    $("#toolBox").on('click',function(){
+        toolBox();
+        socket.emit('config', {"name":'toolBox'});
+    })
+    function toolBox(){
+        if ($("#shape-selector").is(':hidden')) {
+            $("#shape-selector").css('display','block');
+        } else {
+            $("#shape-selector").css('display','none');
+        }
+        $('.itemBox').css({
+           "background-color" :'#f0f0f0'
+        });
+        $('#toolBox').parent().css({
+           "background-color" :'#E3E3E3'
+        });
+        $('#color-selector').hide();
+        $("#bgBox").hide();
+    }
+
+    // 换背景
+    $('.bg').on('click',function(){
+        var bgName = $(this).attr('id');
+        bgBox(bgName);
+        socket.emit('config', {"name":'bgBox',"bgName":bgName});
+    });
+    function bgBox(bgName){
+        $('#bgBox').hide();
+        if(bgName=="bg1"){
+            $('#svgBox').css({
+                "background-image":"url(./images/draw/bg1.svg)",
+                "background-size": "40px 40px",
+            })
+        }else if(bgName=="bg2"){
+            $('#svgBox').css({
+                "background-image":"url(./images/draw/bg2.svg)",
+                "background-size": "23px 23px",
+            })
+        }else if(bgName=="bg3"){
+            $('#svgBox').css({
+                "background-image":"url(./images/draw/bg3.jpg)",
+                "background-size": "61px 61px"
+            })
+        }
+    }
+
+    // 换背景----菜单展示和隐藏
+    $("#choose-bg").on('click',function(){
+        chooseBg();
+        socket.emit('config', {"name":'chooseBg'});
+    })
+    function chooseBg(){
+        if ($("#bgBox").is(':hidden')) {
+            $("#bgBox").css('display','block');
+        } else {
+            $("#bgBox").css('display','none');
+        }
+        $('.itemBox').css({
+           "background-color" :'#f0f0f0'
+        });
+        $('#choose-bg').parent().css({
+           "background-color" :'#E3E3E3'
+        });
+        $('#color-selector').hide();
+        $('#shape-selector').hide();
+    }
+
+
+    // 导出
+    $('#file').on('click',function(e){
+        file();
+        socket.emit('config', {"name":'file'});
+    })
+    function file(){
+        painter.saveAsFile();
+        $('.itemBox').css({
+           "background-color" :'#f0f0f0'
+        });
+        $('#file').parent().css({
+           "background-color" :'#E3E3E3'
+        });
+        $('#color-selector').hide();
+        $('#shape-selector').hide();
+        
+    }
+
+    
+
+    
+
+</script>
+</html>
